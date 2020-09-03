@@ -77,18 +77,63 @@ customBooleanEditor.getValue();
 
 ```
 
-感觉是不是还不如 Boolean.valueOf();或者new Boolean()来的方便快捷。
+### 应用场景
+Spring中的应用场景就是数据绑定，比如web form表单映射成java bean，或者spring xml配置信息映射成BeanDefinition等。
 
-那还学个啥子哦...
+第一步是：
+
+首先会初始化 PropertyEditors 处理器，
+```
+	private static final Map defaultEditors = new HashMap();
+
+	static {
+		defaultEditors.put(Class.class, ClassEditor.class);
+		defaultEditors.put(File.class, FileEditor.class);
+		defaultEditors.put(Locale.class, LocaleEditor.class);
+		defaultEditors.put(Properties.class, PropertiesEditor.class);
+		defaultEditors.put(String[].class, StringArrayPropertyEditor.class);
+		defaultEditors.put(URL.class, URLEditor.class);
+	}
+
+```
+这些都是默认的属性编辑器，一般还会有自定义属性编辑器，这时就会有：
+```
+	private Map customEditors;
+	
+	private void doRegisterCustomEditor(Class requiredType, PropertyEditor propertyEditor) {
+    		if (this.customEditors == null) {
+    			this.customEditors = new HashMap();
+    		}
+    		this.customEditors.put(requiredType, propertyEditor);
+    }
+    
+```
+
+第二步是 读取java bean的属性信息， 这个也很简单，jdk已经帮我们实现好了，
+```
+    private BeanInfo beanInfo;
+    
+	private CachedIntrospectionResults(Class clazz) throws FatalBeanException {
+        // jdk自带工具类，获取bean信息
+        this.beanInfo = Introspector.getBeanInfo(clazz);
+        // 将成员变量的属性信息保存下来， 属性名/属性具体信息
+        this.propertyDescriptorMap = new HashMap();
+        
+        PropertyDescriptor[] pds = this.beanInfo.getPropertyDescriptors();
+        for (int i = 0; i < pds.length; i++) {
+            this.propertyDescriptorMap.put(pds[i].getName(), pds[i]);
+        }
+    }
+```
+
+第三步 前端或者数据库传过来一串String，额，讲的有点深了，这属于
 
 
-### 原理分析
 
-来分析一下什么场景下需要这个 PropertyEditor 的机制，而不是简单粗暴的 类似这种的 Boolean.valueOf() 工具方法。
 
-当你用 Boolean.valueOf() 时，说明你是清楚上下文的，比如，你知道传入的是"true/false"的字符串，你知道返回值是 Boolean 。
+### 原理分
 
-那么如果你不知道呢
+接口 PropertyEditor 抽象了 String数据格式和 具体对象格式 之间 相互转化的逻辑。
 
 
 ### 反思总结
